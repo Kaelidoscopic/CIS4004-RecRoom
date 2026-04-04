@@ -31,21 +31,28 @@ const formatDuration = (ms) => {
 };
 
 const BrowsePage = () => {
-    const [songs, setSongs] = useState([]);
+    const [reviewedSongs, setReviewedSongs] = useState([]);
+    const [reviewedAlbums, setReviewedAlbums] = useState([]);
     const [message, setMessage] = useState("");
     const [featuredSongs, setFeaturedSongs] = useState([]);
     const [featuredAlbums, setFeaturedAlbums] = useState([]);
     const [recentSongs, setRecentSongs] = useState([]);
-    const [reviewedAlbums, setReviewedAlbums] = useState([]);
 
     const loadBrowseData = async () => {
         try
         {
-            const [songsRes, featuredSongsRes, featuredAlbumsRes, recentSongsRes] = await Promise.allSettled([
+            const [
+                reviewedSongsRes,
+                featuredSongsRes,
+                featuredAlbumsRes,
+                recentSongsRes,
+                reviewedAlbumsRes
+            ] = await Promise.allSettled([
                 api.get("/songs/with-reviews/all"),
                 api.get("/songs/featured"),
                 api.get("/albums/featured"),
-                api.get("/songs")
+                api.get("/songs"),
+                api.get("/albums/with-reviews/all")
             ]);
 
             setMessage("");
@@ -58,8 +65,12 @@ const BrowsePage = () => {
                 featuredAlbumsRes.status === "fulfilled" ? featuredAlbumsRes.value.data : []
             );
 
-            setSongs(
-                songsRes.status === "fulfilled" ? songsRes.value.data : []
+            setReviewedSongs(
+                reviewedSongsRes.status === "fulfilled" ? reviewedSongsRes.value.data : []
+            );
+
+            setReviewedAlbums(
+                reviewedAlbumsRes.status === "fulfilled" ? reviewedAlbumsRes.value.data : []
             );
 
             setRecentSongs(
@@ -157,7 +168,7 @@ const BrowsePage = () => {
         );
     };
 
-    const renderAlbumRow = (items, emptyText) => {
+    const renderAlbumRow = (items, emptyText, showReviewData = false) => {
         if (items.length === 0) {
             return <div style={emptyStateStyle}>{emptyText}</div>;
         }
@@ -185,6 +196,21 @@ const BrowsePage = () => {
 
                             <h3 style={{ marginBottom: "0.5rem" }}>{album.title}</h3>
                             <p style={metaTextStyle}><strong>Artist:</strong> {album.artist}</p>
+
+                            {showReviewData && (
+                                <>
+                                    <p style={metaTextStyle}>
+                                        <strong>Tracks:</strong> {album.totalTracks || 0}
+                                    </p>
+                                    <p style={metaTextStyle}>
+                                        <strong>Average Rating:</strong>{" "}
+                                        {album.reviewCount > 0 ? `${album.averageRating} / 5` : "No ratings yet"}
+                                    </p>
+                                    <p style={metaTextStyle}>
+                                        <strong>Reviews:</strong> {album.reviewCount ?? 0}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </Link>
                 ))}
@@ -197,7 +223,7 @@ const BrowsePage = () => {
             <div style={contentStyle}>
                 <h1 style={sectionHeaderStyle}>Browse</h1>
                 <p style={pageIntroStyle}>
-                    Discover featured picks, recent additions, and the most reviewed songs on Record Room.
+                    Discover featured picks, recent additions, and the most reviewed music on Record Room.
                 </p>
 
                 {message && <div style={messageStyle}>{message}</div>}
@@ -225,8 +251,13 @@ const BrowsePage = () => {
                 </section>
 
                 <section style={rowSectionStyle}>
-                    <h2 style={rowHeaderStyle}>Top Reviewed on Record Room</h2>
-                    {renderSongRow(songs, "No reviewed songs yet.", true)}
+                    <h2 style={rowHeaderStyle}>Top Reviewed Songs</h2>
+                    {renderSongRow(reviewedSongs, "No reviewed songs yet.", true)}
+                </section>
+
+                <section style={rowSectionStyle}>
+                    <h2 style={rowHeaderStyle}>Top Reviewed Albums</h2>
+                    {renderAlbumRow(reviewedAlbums, "No reviewed albums yet.", true)}
                 </section>
             </div>
         </div>

@@ -30,6 +30,49 @@ router.get("/featured", async (req, res) => {
     }
 });
 
+router.get("/with-reviews/all", async (req, res) => {
+    try {
+        const albums = await Album.aggregate([
+            {
+                $lookup: {
+                    from: "reviews",
+                    localField: "_id",
+                    foreignField: "album",
+                    as: "reviews"
+                }
+            },
+            {
+                $addFields: {
+                    reviewCount: { $size: "$reviews" },
+                    averageRating: {
+                        $cond: [
+                            { $gt: [{ $size: "$reviews" }, 0] },
+                            { $round: [{ $avg: "$reviews.rating" }, 1] },
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                $match: {
+                    reviewCount: { $gt: 0 }
+                }
+            },
+            {
+                $sort: {
+                    reviewCount: -1,
+                    averageRating: -1,
+                    createdAt: -1
+                }
+            }
+        ]);
+
+        res.json(albums);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 router.get("/:id", async (req, res) => {
     try
     {

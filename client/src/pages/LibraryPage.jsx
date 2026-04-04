@@ -52,6 +52,20 @@ const LibraryPage = () => {
     const [playlists, setPlaylists] = useState([]);
     const [albums, setAlbums] = useState([]);
 
+    const getCurrentUserId = () => {
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                return parsed?._id || parsed?.id || null;
+            }
+
+            return localStorage.getItem("userId");
+        } catch {
+            return localStorage.getItem("userId");
+        }
+    };
+
     const loadLibrary = async () => {
         try
         {
@@ -62,7 +76,18 @@ const LibraryPage = () => {
 
             setSongs(libraryRes.data.songs || []);
             setAlbums(libraryRes.data.albums || []);
-            setPlaylists(playlistsRes.data || []);
+
+            const currentUserId = getCurrentUserId();
+
+            const mineOnly = (playlistsRes.data || []).filter(
+                (playlist) =>
+                    !currentUserId ||
+                    playlist.owner?._id === currentUserId ||
+                    playlist.owner === currentUserId
+            );
+
+            setPlaylists(mineOnly);
+            setMessage("");
         }
         catch (error)
         {
@@ -120,6 +145,7 @@ const LibraryPage = () => {
             setTitle("");
             setDescription("");
             setSelectedSongs([]);
+            loadLibrary();
         }
         catch (error)
         {
@@ -159,6 +185,12 @@ const LibraryPage = () => {
                             onChange={(e) => setDescription(e.target.value)}
                             style={{ ...textareaStyle, ...fullWidthStyle, marginBottom: 0 }}
                         />
+
+                        <div>
+                            <button onClick={createPlaylist} style={buttonStyle}>
+                                Create Playlist
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -201,6 +233,7 @@ const LibraryPage = () => {
                     <p style={metaTextStyle}>
                         <strong>Selected Songs:</strong> {selectedSongs.length}
                     </p>
+
                     {songs.length === 0 ? (
                         <div style={emptyStateStyle}>
                             No songs in your library yet. Save songs from Browse to get started.
@@ -238,9 +271,9 @@ const LibraryPage = () => {
                                         <p style={metaTextStyle}><strong>Duration:</strong> {formatDuration(song.duration)}</p>
                                     </Link>
 
-                                    <div style={{ marginTop: "0.75rem" }}>
-                                        <button onClick={createPlaylist} style={buttonStyle}>
-                                            Create Playlist
+                                    <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem" }}>
+                                        <button onClick={() => removeSong(song._id)} style={buttonStyle}>
+                                            Remove
                                         </button>
                                     </div>
                                 </div>
@@ -248,6 +281,7 @@ const LibraryPage = () => {
                         </div>
                     )}
                 </section>
+
                 <section style={{ ...sectionStyle, ...formCardStyle }}>
                     <h2 style={subHeaderStyle}>My Playlists</h2>
 
