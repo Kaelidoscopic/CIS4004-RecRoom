@@ -1,7 +1,6 @@
 Project name: Record Room
 
 How to run backend:
-1. cd server
 2. npm install
 3. npm run dev
 
