@@ -19,6 +19,13 @@ const SpotifyCallbackPage = () => {
             {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get("code");
+                const error = params.get("error");
+
+                if (error)
+                {
+                    setMessage(error);
+                    return;
+                }
 
                 if (!code)
                 {
@@ -38,6 +45,7 @@ const SpotifyCallbackPage = () => {
                 });
 
                 localStorage.removeItem("spotify_verifier");
+                window.history.replaceState({}, document.title, "/spotify");
                 setMessage("Spotify connected successfully. Redirecting...");
 
                 setTimeout(() => {
